@@ -40,7 +40,8 @@
             android:hint="@string/setting_name"
             android:paddingLeft="5dp"
             android:paddingRight="5dp"
-            android:textSize="13sp" />
+            android:textSize="13sp"
+            android:text="A207-01,A207-02,A207-03,A207-04,A207-05,A207-06,A207-07,A207-08"/>
 
         <EditText
             android:id="@+id/et_mac"
@@ -73,8 +74,9 @@
 
     <TextView
         android:id="@+id/txt_setting"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:gravity="center"
         android:layout_gravity="center_horizontal"
         android:background="#eeeeee"
         android:padding="10dp" />
@@ -85,12 +87,44 @@
         android:orientation="horizontal"
         android:padding="10dp">
 
-        <Button
-            android:id="@+id/btn_scan"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
-            android:text="@string/start_scan" />
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Coordinate:"/>
+                <EditText
+                    android:id="@+id/et_coordinate"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Enter coordinate, separated by commas"
+                    android:textSize="13sp"/>
+            </LinearLayout>
+
+
+            <Button
+                android:id="@+id/btn_scan"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:text="@string/start_scan" />
+            <Button
+                android:id="@+id/btn_flag"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:text="Scan COntrol"
+                android:visibility="gone"/>
+
+        </LinearLayout>
 
         <ImageView
             android:id="@+id/img_loading"
