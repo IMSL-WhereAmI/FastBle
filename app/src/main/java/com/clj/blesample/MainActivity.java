@@ -12,6 +12,7 @@ import android.content.pm.PackageManager;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -45,8 +46,12 @@ import com.clj.fastble.data.BleDevice;
 import com.clj.fastble.exception.BleException;
 import com.clj.fastble.scan.BleScanRuleConfig;
 
+import java.security.KeyStore;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.UUID;
 
 
@@ -55,17 +60,30 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private static final String TAG = MainActivity.class.getSimpleName();
     private static final int REQUEST_CODE_OPEN_GPS = 1;
     private static final int REQUEST_CODE_PERMISSION_LOCATION = 2;
+    private static String[] BLE_NAMES = new String[]{"A207-01","A207-02","A207-03","A207-04","A207-05","A207-06","A207-07","A207-08"};
 
     private LinearLayout layout_setting;
     private TextView txt_setting;
     private Button btn_scan;
-    private EditText et_name, et_mac, et_uuid;
+    private Button btn_control;
+    private EditText et_name, et_mac, et_uuid, et_coordinate;
     private Switch sw_auto;
     private ImageView img_loading;
 
     private Animation operatingAnim;
     private DeviceAdapter mDeviceAdapter;
     private ProgressDialog progressDialog;
+
+    private static FileUtil fileUtil;
+    private static int scan_flag = 1;
+    private Timer timer = new Timer();
+    private static int[] ble_rssi = new int[8];
+
+    private static void reset(int[] rssi){
+        for(int i = 0; i < rssi.length; i++)
+            rssi[i] = 0;
+    }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -100,8 +118,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.btn_scan:
                 if (btn_scan.getText().equals(getString(R.string.start_scan))) {
                     checkPermissions();
+//                    scan_flag = 1;
+//                    while(scan_flag == 1) {
+//                        checkPermissions();
+//                        SystemClock.sleep(2000);
+//                    }
+
                 } else if (btn_scan.getText().equals(getString(R.string.stop_scan))) {
                     BleManager.getInstance().cancelScan();
+//                    btn_scan.setText(getString(R.string.start_scan));
                 }
                 break;
 
@@ -114,6 +139,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     txt_setting.setText(getString(R.string.retrieve_search_settings));
                 }
                 break;
+
+            case R.id.btn_flag:
+                btn_scan.performClick();
+//                SystemClock.sleep(2000);
+                break;
         }
     }
 
@@ -124,10 +154,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         btn_scan = (Button) findViewById(R.id.btn_scan);
         btn_scan.setText(getString(R.string.start_scan));
         btn_scan.setOnClickListener(this);
+        btn_control = (Button) findViewById(R.id.btn_flag);
+        btn_control.setOnClickListener(this);
+
+        fileUtil = new FileUtil();
 
         et_name = (EditText) findViewById(R.id.et_name);
         et_mac = (EditText) findViewById(R.id.et_mac);
         et_uuid = (EditText) findViewById(R.id.et_uuid);
+        et_coordinate = (EditText) findViewById(R.id.et_coordinate);
         sw_auto = (Switch) findViewById(R.id.sw_auto);
 
         layout_setting = (LinearLayout) findViewById(R.id.layout_setting);
@@ -169,6 +204,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         });
         ListView listView_device = (ListView) findViewById(R.id.list_device);
         listView_device.setAdapter(mDeviceAdapter);
+
+        reset(ble_rssi);
     }
 
     private void showConnectedDevice() {
@@ -210,6 +247,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             names = str_name.split(",");
         }
 
+//        String BLE_names = "A207-01,A207-02,A207-03,A207-04,A207-05,A207-06,A207-07,A207-08";
+//        names = BLE_names.split(",");
+
         String mac = et_mac.getText().toString();
 
         boolean isAutoConnect = sw_auto.isChecked();
@@ -219,7 +259,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 .setDeviceName(true, names)   // 只扫描指定广播名的设备，可选
                 .setDeviceMac(mac)                  // 只扫描指定mac的设备，可选
                 .setAutoConnect(isAutoConnect)      // 连接时的autoConnect参数，可选，默认false
-                .setScanTimeOut(10000)              // 扫描超时时间，可选，默认10秒
+                .setScanTimeOut(0)              // 扫描超时时间，可选，默认10秒
                 .build();
         BleManager.getInstance().initScanRule(scanRuleConfig);
     }
@@ -233,17 +273,33 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 img_loading.startAnimation(operatingAnim);
                 img_loading.setVisibility(View.VISIBLE);
                 btn_scan.setText(getString(R.string.stop_scan));
+
+                if(success){
+                    Log.i("onScanStarted", "onScanStarted: success");
+                }
+                else {
+                    Log.i("onScanStarted", "onScanStarted: failed");
+                }
+
+                timer.schedule(new SaveScanRes(), 500, 1000);
             }
 
             @Override
             public void onLeScan(BleDevice bleDevice) {
                 super.onLeScan(bleDevice);
+                Log.i("onLeScan", "onLeScan: " + bleDevice.getName() + "," + bleDevice.getRssi());
+
+                String name = bleDevice.getName();
+                if(Arrays.asList(BLE_NAMES).contains(name)){
+                    ble_rssi[Integer.parseInt(name.substring(5)) - 1] = bleDevice.getRssi();
+                }
             }
 
             @Override
             public void onScanning(BleDevice bleDevice) {
                 mDeviceAdapter.addDevice(bleDevice);
                 mDeviceAdapter.notifyDataSetChanged();
+                Log.i("onScanning", "onScanning: "+ bleDevice.getName() + "," + bleDevice.getRssi());
             }
 
             @Override
@@ -251,8 +307,38 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 img_loading.clearAnimation();
                 img_loading.setVisibility(View.INVISIBLE);
                 btn_scan.setText(getString(R.string.start_scan));
+
+                int rssi[] = new int[scanResultList.size()];
+                for (BleDevice bleDevice: scanResultList) {
+                    Log.i("onScanFinished", "onScanFinished: "+ bleDevice.getName() + "," + bleDevice.getRssi());
+                    if(Arrays.asList(BLE_NAMES).contains(bleDevice.getName())) {
+                        rssi[Integer.parseInt(bleDevice.getName().substring(5)) - 1] = bleDevice.getRssi();
+                    }
+                }
+                String data = Arrays.toString(rssi);
+
+                timer.cancel();
+                String coordinate = et_coordinate.getText().toString();
+
+                fileUtil.saveSensorData("BLEScanData.csv",  coordinate + "\n\n");
+
+                fileUtil.saveSensorData("BLE_Fingerprints.csv", coordinate + ", ," + data.substring(1, data.length()-1) + "\n");
             }
         });
+    }
+
+    static class SaveScanRes extends TimerTask{
+        @Override
+        public void run() {
+            String data = Arrays.toString(ble_rssi);
+            boolean success = fileUtil.saveSensorData("BLEScanData.csv", data.substring(1, data.length()-1) + "\n");
+            if(success){
+                reset(ble_rssi);
+            }
+            else{
+                Log.i("SaveRes", ble_rssi.toString());
+            }
+        }
     }
 
     private void connect(final BleDevice bleDevice) {
