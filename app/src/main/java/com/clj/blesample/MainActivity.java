@@ -326,12 +326,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 String coordinate = Arrays.toString(et_coordinate.getText().toString().split(",|，"));
 
 //                fileUtil.saveSensorData("BLEScanData.csv",  coordinate + "\n\n");
+                if(scanResultList.size() == 0){
+                    Toast.makeText(MainActivity.this, "Fingerprint scan failed", Toast.LENGTH_SHORT).show();
+                }
+                else{
+                    boolean success = fileUtil.saveSensorData("BLE_Fingerprints.csv",
+                            coordinate.substring(1, coordinate.length()-1) + ", ," + data.substring(1, data.length()-1) + "\n");
 
-                boolean success = fileUtil.saveSensorData("BLE_Fingerprints.csv",
-                        coordinate.substring(1, coordinate.length()-1) + ", ," + data.substring(1, data.length()-1) + "\n");
-
-                if(success){
-                    Toast.makeText(MainActivity.this, "Fingerprint save successfully", Toast.LENGTH_SHORT).show();
+                    if(success){
+                        Toast.makeText(MainActivity.this, "Fingerprint save successfully", Toast.LENGTH_SHORT).show();
+                    }
                 }
             }
         });
