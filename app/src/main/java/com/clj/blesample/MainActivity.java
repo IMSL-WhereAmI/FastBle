@@ -47,8 +47,10 @@ import com.clj.fastble.exception.BleException;
 import com.clj.fastble.scan.BleScanRuleConfig;
 
 import java.security.KeyStore;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -81,7 +83,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private static void reset(int[] rssi){
         for(int i = 0; i < rssi.length; i++)
-            rssi[i] = 0;
+            rssi[i] = -100;
     }
 
 
@@ -321,11 +323,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 String data = Arrays.toString(rssi);
 
                 timer.cancel();
-                String coordinate = et_coordinate.getText().toString();
+                String coordinate = Arrays.toString(et_coordinate.getText().toString().split(",|，"));
 
-                fileUtil.saveSensorData("BLEScanData.csv",  coordinate + "\n\n");
+//                fileUtil.saveSensorData("BLEScanData.csv",  coordinate + "\n\n");
 
-                boolean success = fileUtil.saveSensorData("BLE_Fingerprints.csv", coordinate + ", ," + data.substring(1, data.length()-1) + "\n");
+                boolean success = fileUtil.saveSensorData("BLE_Fingerprints.csv",
+                        coordinate.substring(1, coordinate.length()-1) + ", ," + data.substring(1, data.length()-1) + "\n");
 
                 if(success){
                     Toast.makeText(MainActivity.this, "Fingerprint save successfully", Toast.LENGTH_SHORT).show();
@@ -334,16 +337,24 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         });
     }
 
+    public static String GetSystemTime(){
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");// HH:mm:ss
+        //获取当前时间
+        Date date = new Date(System.currentTimeMillis());
+        return simpleDateFormat.format(date);
+    }
+
     static class SaveScanRes extends TimerTask{
         @Override
         public void run() {
             String data = Arrays.toString(ble_rssi);
-            boolean success = fileUtil.saveSensorData("BLEScanData.csv", data.substring(1, data.length()-1) + "\n");
+            boolean success = fileUtil.saveSensorData("BLEScanData.csv", data.substring(1, data.length()-1)
+                    + "," + GetSystemTime() + "\n");
             if(success){
 //                reset(ble_rssi);
             }
             else{
-                Log.i("SaveRes", ble_rssi.toString());
+                Log.i("SaveRes", Arrays.toString(ble_rssi));
             }
         }
     }
