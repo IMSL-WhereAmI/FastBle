@@ -76,8 +76,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private static FileUtil fileUtil;
     private static int scan_flag = 1;
-    private Timer timer = new Timer();
-    private static int[] ble_rssi = new int[8];
+    private Timer timer;
+    private static int[] ble_rssi = new int[BLE_NAMES.length];
 
     private static void reset(int[] rssi){
         for(int i = 0; i < rssi.length; i++)
@@ -247,8 +247,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             names = str_name.split(",");
         }
 
-//        String BLE_names = "A207-01,A207-02,A207-03,A207-04,A207-05,A207-06,A207-07,A207-08";
-//        names = BLE_names.split(",");
+        String BLE_names = "A207-01,A207-02,A207-03,A207-04,A207-05,A207-06,A207-07,A207-08";
+        names = BLE_names.split(",");
 
         String mac = et_mac.getText().toString();
 
@@ -280,7 +280,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 else {
                     Log.i("onScanStarted", "onScanStarted: failed");
                 }
-
+                timer = new Timer();
                 timer.schedule(new SaveScanRes(), 500, 1000);
             }
 
@@ -308,10 +308,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 img_loading.setVisibility(View.INVISIBLE);
                 btn_scan.setText(getString(R.string.start_scan));
 
-                int rssi[] = new int[scanResultList.size()];
+                int rssi[] = new int[BLE_NAMES.length];
+                reset(rssi);
                 for (BleDevice bleDevice: scanResultList) {
                     Log.i("onScanFinished", "onScanFinished: "+ bleDevice.getName() + "," + bleDevice.getRssi());
                     if(Arrays.asList(BLE_NAMES).contains(bleDevice.getName())) {
+//                        Log.i("BLE_device", "" + bleDevice.getName().substring(6));
+//                        Log.i("BLE_device", "" + Integer.parseInt(bleDevice.getName().substring(6)));
                         rssi[Integer.parseInt(bleDevice.getName().substring(5)) - 1] = bleDevice.getRssi();
                     }
                 }
@@ -322,7 +325,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                 fileUtil.saveSensorData("BLEScanData.csv",  coordinate + "\n\n");
 
-                fileUtil.saveSensorData("BLE_Fingerprints.csv", coordinate + ", ," + data.substring(1, data.length()-1) + "\n");
+                boolean success = fileUtil.saveSensorData("BLE_Fingerprints.csv", coordinate + ", ," + data.substring(1, data.length()-1) + "\n");
+
+                if(success){
+                    Toast.makeText(MainActivity.this, "Fingerprint save successfully", Toast.LENGTH_SHORT).show();
+                }
             }
         });
     }
@@ -333,7 +340,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             String data = Arrays.toString(ble_rssi);
             boolean success = fileUtil.saveSensorData("BLEScanData.csv", data.substring(1, data.length()-1) + "\n");
             if(success){
-                reset(ble_rssi);
+//                reset(ble_rssi);
             }
             else{
                 Log.i("SaveRes", ble_rssi.toString());
