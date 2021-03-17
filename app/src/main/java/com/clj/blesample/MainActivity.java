@@ -62,7 +62,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private static final String TAG = MainActivity.class.getSimpleName();
     private static final int REQUEST_CODE_OPEN_GPS = 1;
     private static final int REQUEST_CODE_PERMISSION_LOCATION = 2;
-    private static String[] BLE_NAMES = new String[]{"A207-01","A207-02","A207-03","A207-04","A207-05","A207-06","A207-07","A207-08"};
+    private static String[] BLE_NAMES = new String[]{"A207-01","A207-02","A207-03","A207-04","A207-05","A207-06","A207-07","A207-08",
+            "A207-09","A207-10","A207-11","A207-12","A207-13","A207-14","A207-15","A207-16",
+            "A207-17","A207-18","A207-19","A207-20","A207-21","A207-22","A207-23","A207-24",
+            "A207-25","A207-26","A207-27","A207-28","A207-29","A207-30","A207-31","A207-32",
+            "A207-33","A207-34","A207-35","A207-36","A207-37","A207-38"};
 
     private LinearLayout layout_setting;
     private TextView txt_setting;
@@ -249,8 +253,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             names = str_name.split(",");
         }
 
-        String BLE_names = "A207-01,A207-02,A207-03,A207-04,A207-05,A207-06,A207-07,A207-08";
-        names = BLE_names.split(",");
+//        String BLE_names = "A207-01,A207-02,A207-03,A207-04,A207-05,A207-06,A207-07,A207-08";
+//        names = BLE_names.split(",");
 
         String mac = et_mac.getText().toString();
 
@@ -258,7 +262,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         BleScanRuleConfig scanRuleConfig = new BleScanRuleConfig.Builder()
                 .setServiceUuids(serviceUuids)      // 只扫描指定的服务的设备，可选
-                .setDeviceName(true, names)   // 只扫描指定广播名的设备，可选
+                .setDeviceName(true, BLE_NAMES)   // 只扫描指定广播名的设备，可选
                 .setDeviceMac(mac)                  // 只扫描指定mac的设备，可选
                 .setAutoConnect(isAutoConnect)      // 连接时的autoConnect参数，可选，默认false
                 .setScanTimeOut(0)              // 扫描超时时间，可选，默认10秒
@@ -310,6 +314,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 img_loading.setVisibility(View.INVISIBLE);
                 btn_scan.setText(getString(R.string.start_scan));
 
+                timer.cancel();
+
                 int rssi[] = new int[BLE_NAMES.length];
                 reset(rssi);
                 for (BleDevice bleDevice: scanResultList) {
@@ -322,7 +328,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }
                 String data = Arrays.toString(rssi);
 
-                timer.cancel();
                 String coordinate = Arrays.toString(et_coordinate.getText().toString().split(",|，"));
 
 //                fileUtil.saveSensorData("BLEScanData.csv",  coordinate + "\n\n");
@@ -335,6 +340,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                     if(success){
                         Toast.makeText(MainActivity.this, "Fingerprint save successfully", Toast.LENGTH_SHORT).show();
+                    }
+                    else{
+                        Toast.makeText(MainActivity.this, "Fingerprint save failed", Toast.LENGTH_SHORT).show();
                     }
                 }
             }
@@ -355,7 +363,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             boolean success = fileUtil.saveSensorData("BLEScanData.csv", data.substring(1, data.length()-1)
                     + "," + GetSystemTime() + "\n");
             if(success){
-//                reset(ble_rssi);
+                reset(ble_rssi);
             }
             else{
                 Log.i("SaveRes", Arrays.toString(ble_rssi));
